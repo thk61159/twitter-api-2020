@@ -12,7 +12,8 @@ module.exports = (sequelize, DataTypes) => {
   }
   Tweet.init({
     userId: DataTypes.INTEGER,
-    description: DataTypes.TEXT
+    description: DataTypes.TEXT,
+    image: DataTypes.STRING
   }, {
     sequelize,
     modelName: 'Tweet',

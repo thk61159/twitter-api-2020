@@ -20,7 +20,7 @@ module.exports = {
             comment: faker.lorem.sentence(5),
             created_at: new Date(),
             updated_at: new Date(),
-            image: `https://loremflickr.com/320/240/?random=${Math.random() * 100}`
+            image: `https://loremflickr.com/320/240/?random=${Math.floor(Math.random() * 100)}`
           }
         })
       )

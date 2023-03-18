@@ -1,0 +1,52 @@
+const { User } = require('../models')
+const bcrypt = require('bcryptjs')
+const { Op } = require('sequelize')
+const jwt = require('jsonwebtoken')
+const { getUser } = require('../_helpers')
+const userController = {
+  signUp: async (req, res, next) => {
+    try {
+      const { account, name, email, password, passwordCheck } = req.body
+      if (password !== passwordCheck) throw new Error('密碼與確認密碼不一致!')// 確認密碼一致
+      const user = await User.findOne({ // account 和 email 不能與其他人重複
+        where: {
+          [Op.or]: [
+            { email },
+            { account }
+          ]
+        }
+      })
+      if (user) {
+        if (user.email === email) throw new Error('Email已被註冊')
+        if (user.account === account) throw new Error('Account已被使用')
+      }
+      const hash = await bcrypt.hash(password, 10)
+      const createdUser = await User.create({
+        account,
+        name,
+        email,
+        password: hash
+      })
+      res.json({ status: 'success', user: createdUser })
+    } catch (error) {
+      next(error)
+    }
+  },
+  signIn: (req, res, next) => {
+    try {
+      const userData = getUser(req).toJSON()
+      delete userData.password
+      const token = jwt.sign(userData, process.env.JWT_SECRET, { expiresIn: '30d' })
+      res.json({
+        status: 'success',
+        data: {
+          token,
+          user: userData
+        }
+      })
+    } catch (err) {
+      next(err)
+    }
+  }
+}
+module.exports = userController

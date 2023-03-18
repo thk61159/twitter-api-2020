@@ -13,9 +13,9 @@ module.exports = {
     for (let i = 0; i < 3; i++) {
       await queryInterface.bulkInsert('Replies',
         tweetsId.map(tweet => {
-          const randerUserIndex = Math.floor(Math.random() * usersId.length)
+          const randomUserIndex = Math.floor(Math.random() * usersId.length)
           return {
-            User_id: usersId[randerUserIndex].id,
+            User_id: usersId[randomUserIndex].id,
             Tweet_id: tweet.id,
             comment: faker.lorem.sentence(5),
             created_at: new Date(),

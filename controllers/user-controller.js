@@ -17,8 +17,8 @@ const userController = {
         }
       })
       if (user) {
-        if (user.email === email) throw new Error('Email已被註冊')
-        if (user.account === account) throw new Error('Account已被使用')
+        if (user.email === email) throw new Error('email 已重複註冊！')
+        if (user.account === account) throw new Error('account 已重複註冊v')
       }
       const hash = await bcrypt.hash(password, 10)
       const createdUser = await User.create({

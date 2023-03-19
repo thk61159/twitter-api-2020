@@ -50,7 +50,11 @@ const userController = {
   },
   signInFail: (error, req, res, next) => {
     return res.status(401).send({ status: 'error', error, reason: req.session.messages })
+  },
+  userVerify: (req, res) => {
+    const token = req.header('Authorization').replace('Bearer ', '')
+    const decoded = jwt.verify(token, process.env.JWT_SECRET)
+    res.json({ status: 'success', user: decoded })
   }
-  // todo - userVerify
 }
 module.exports = userController

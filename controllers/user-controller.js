@@ -18,7 +18,7 @@ const userController = {
       })
       if (user) {
         if (user.email === email) throw new Error('email 已重複註冊！')
-        if (user.account === account) throw new Error('account 已重複註冊v')
+        if (user.account === account) throw new Error('account 已重複註冊')
       }
       const hash = await bcrypt.hash(password, 10)
       const createdUser = await User.create({
@@ -47,6 +47,10 @@ const userController = {
     } catch (err) {
       next(err)
     }
+  },
+  signInFail: (error, req, res, next) => {
+    return res.status(401).send({ status: 'error', error, reason: req.session.messages })
   }
+  // todo - userVerify
 }
 module.exports = userController

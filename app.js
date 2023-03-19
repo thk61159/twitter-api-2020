@@ -18,6 +18,11 @@ app.use(session({
 app.use(passport.initialize())
 app.use(passport.session())
 
+app.use((req, res, next) => {
+  req.session.messages = [] // 重設錯誤訊息
+  next()
+})
+
 app.use('/api', apis)
 app.get('/', (req, res) => res.send('Hello World!'))
 app.listen(port, () => console.log(`Example app listening on port ${port}!`))

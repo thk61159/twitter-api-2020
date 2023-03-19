@@ -81,6 +81,35 @@ const userController = {
       next(err)
     }
   },
-  
+  getReplies: async (req, res, next) => {
+    // 之後或許需要使用者名稱跟帳號
+    try {
+      const userId = req.params.id
+      const replies = await Reply.findAll({
+        where: { userId },
+        include: {
+          model: Tweet,
+          attributes: ['id'],
+          include: { model: User, attributes: ['account'] }
+        },
+        order: [['createdAt', 'DESC']],
+        raw: true
+      })
+      const result = replies.map(e => ({
+        ...e,
+        name: req.user || 'just an example',
+        account: req.user || 'just an example'
+      }))
+
+      const response = {
+        data: result
+      }
+      res.status(200).json(response)
+    } catch (err) {
+      console.log(err)
+      next(err)
+    }
+  }
+
 }
 module.exports = userController

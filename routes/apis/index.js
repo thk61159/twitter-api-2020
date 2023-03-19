@@ -1,11 +1,9 @@
 const express = require('express')
 const router = express.Router()
-const passport = require('passport')
-const { apiErrorHandler } = require('../../middleware/error-handler')
-const userController = require('../../controllers/user-controller')
+const users = require('./user')
+const admin = require('./admin')
 
-router.post('/signup', userController.signUp)
-router.post('/signin', passport.authenticate('local', { session: false }), userController.signIn)
+router.use('/users', users)
+router.use('/admin', admin)
 
-router.use('/', apiErrorHandler)
 module.exports = router

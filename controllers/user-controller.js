@@ -57,6 +57,30 @@ const userController = {
     } catch (err) {
       next(err)
     }
-  }
+  },
+  getTweets: async (req, res, next) => {
+    try {
+      const userId = req.params.id
+      const tweets = await Tweet.findAll({
+        where: { userId },
+        include: [{ model: Reply }, { model: Like }],
+        order: [['createdAt', 'DESC']],
+        nest: true
+      })
+      const result = tweets.map(e => {
+        const temp = e.toJSON()
+        temp.Replies = temp.Replies.length
+        temp.Likes = temp.Likes.length
+        return temp
+      })
+      const response = {
+        data: result
+      }
+      res.status(200).json(response)
+    } catch (err) {
+      next(err)
+    }
+  },
+  
 }
 module.exports = userController

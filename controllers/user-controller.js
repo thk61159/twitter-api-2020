@@ -133,6 +133,40 @@ const userController = {
       console.log(err)
       next(err)
     }
+  },
+  getFollowings: async (req, res, next) => {
+    try {
+      const { id } = req.params
+      const followings = await User.findByPk(id, {
+        include: [
+          {
+            model: User,
+            as: 'Followings',
+            attributes: ['id', 'name', 'avatar', 'introduction']
+          }
+        ]
+      })
+      // 假登入資料
+      let currentUser = await User.findByPk(req.user || 3, {
+        include: [{ model: User, as: 'Followings', attributes: ['id'] }],
+        attributes: ['id']
+      })
+      currentUser = currentUser.toJSON()
+      //
+      const result = followings
+        .toJSON()
+        .Followings.map(e => ({
+          ...e,
+          currentfollowed: currentUser.Followings.some(element => element.id === e.id)
+        }))
+      const response = {
+        data: result
+      }
+      res.status(200).json(response)
+    } catch (err) {
+      console.log(err)
+      next(err)
+    }
   }
 }
 module.exports = userController

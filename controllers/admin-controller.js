@@ -1,4 +1,4 @@
-const { User, Tweet, Like } = require('../models')
+const { User, Tweet, Like, Reply } = require('../models')
 const { getUser } = require('../_helpers')
 const jwt = require('jsonwebtoken')
 
@@ -48,6 +48,35 @@ const adminController = {
       })
       result.sort((a, b) => b.tweetCount - a.tweetCount)
       res.json({ status: 'success', data: result })
+    } catch (error) {
+      next(error)
+    }
+  },
+  getTweets: async (req, res, next) => {
+    try {
+      const tweets = await Tweet.findAll({
+        include: [
+          { model: User, attributes: ['name'] }
+        ]
+      })
+      res.json({ status: 'success', data: tweets })
+    } catch (error) {
+      next(error)
+    }
+  },
+  deleteTweet: async (req, res, next) => { // 待優化: 一個動作可以一次刪除完有關該貼文的資料
+    try {
+      const tweetId = req.params.id
+      const tweet = await Tweet.findByPk(tweetId)
+      if (!tweet) throw new Error("tweet didn't exist!")
+      const [Replies, Likes] = await Promise.all([ // 找到與此條貼文有關留言與案讚資料
+        Reply.findAll({ where: { tweetId } }),
+        Like.findAll({ where: { tweetId } })
+      ])
+      Replies.forEach(reply => reply.destroy()) // 並刪除與這條貼文有關的資料
+      Likes.forEach(like => like.destroy())
+      const deletedTweet = await tweet.destroy()
+      res.json({ status: 'success', deletedTweet })
     } catch (error) {
       next(error)
     }

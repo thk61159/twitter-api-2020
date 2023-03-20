@@ -1,3 +1,4 @@
+const { User, Tweet, Like } = require('../models')
 const { getUser } = require('../_helpers')
 const jwt = require('jsonwebtoken')
 
@@ -21,6 +22,35 @@ const adminController = {
   },
   signInFail: (error, req, res, next) => {
     return res.status(401).send({ status: 'error', error, reason: req.session.messages })
+  },
+  getUsers: async (req, res, next) => { // 可優化 查詢條件,排除password和不必要的資料
+    try {
+      const data = await User.findAll({
+        include: [
+          { model: Tweet, include: { model: Like } },
+          { model: User, as: 'Followers' },
+          { model: User, as: 'Followings' }
+        ],
+        nest: true
+      })
+      const result = data.map(data => {
+        let totalLikes = 0
+        data.Tweets.forEach(t => { // 把所有發過的tweet拿到的likes加總在一起
+          totalLikes += t.Likes.length
+        })
+        return {
+          tweetCount: data.Tweets.length,
+          followersCount: data.Followers.length,
+          followingsCount: data.Followings.length,
+          totalLikes,
+          ...data.toJSON()
+        }
+      })
+      result.sort((a, b) => b.tweetCount - a.tweetCount)
+      res.json({ status: 'success', data: result })
+    } catch (error) {
+      next(error)
+    }
   }
 }
 module.exports = adminController

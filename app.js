@@ -11,10 +11,6 @@ app.use(express.urlencoded({ extended: true }))
 
 app.use('/api', routes)
 
-// use helpers.getUser(req) to replace req.user
-// function authenticated(req, res, next){
-// passport.authenticate('jwt', { ses...
-// };
 
 app.listen(port, () => console.log(`Example app listening on port ${port}!`))
 

@@ -28,11 +28,11 @@ module.exports = {
       },
       role: {
         type: Sequelize.STRING,
-        default: 'user'
+        defaultValue: 'user'
       },
       background: {
         type: Sequelize.STRING,
-        default: 'https://images.unsplash.com/photo-1580436541340-36b8d0c60bae?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=776&q=80'
+        defaultValue: 'https://images.unsplash.com/photo-1580436541340-36b8d0c60bae?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=776&q=80'
       },
       created_at: {
         allowNull: false,

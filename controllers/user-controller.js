@@ -1,5 +1,6 @@
-const { User, Tweet, Followship, Reply, Like } = require('../models')
 const { Op } = require('sequelize')
+const bcrypt = require('bcryptjs')
+const { User, Tweet, Followship, Reply, Like } = require('../models')
 const { getUser } = require('../_helpers')
 const { imgurFileHandler } = require('../helpers/file-helpers')
 const userControllerformerge = {
@@ -17,6 +18,7 @@ const userControllerformerge = {
         where: { followerId: id }
       })
       user.currentUser = id === req.id
+      delete user.password
       return Promise.resolve(user)
         .then(user => res.status(200).json(user))
         .catch(err => next(err))
@@ -216,7 +218,9 @@ const userControllerformerge = {
       const form = req.body
       const finalform = await userControllerformerge.formValidation(form, req)
       const user = await User.findByPk(id)
-      const update = await user.update(finalform)
+      let update = await user.update(finalform)
+      update = update.toJSON()
+      delete update.password
       return Promise.resolve(update)
         .then(update => res.status(200).json(update))
         .catch(err => next(err))
@@ -227,6 +231,9 @@ const userControllerformerge = {
   formValidation: async (form, req) => {
     const finalform = {}
     for (const key in form) {
+      if (key === 'password') {
+        form[key] = bcrypt.hashSync(form[key], bcrypt.genSaltSync(10), null)
+      }
       if (key === 'email') {
         if (!form[key]) throw new Error('此信箱不可為空')
         const countEmail = await User.findAndCountAll({

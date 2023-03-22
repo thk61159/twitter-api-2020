@@ -2,16 +2,18 @@ const jwt = require('jsonwebtoken')
 const { Op } = require('sequelize')
 const bcrypt = require('bcryptjs')
 const { User, Tweet, Followship, Reply, Like } = require('../models')
-const { getUser } = require('../_helpers')
+const { ReqError, AuthError, AutherError } = require('../helpers/errorInstance')
 const { imgurFileHandler } = require('../helpers/file-helpers')
 const { tryCatch } = require('../helpers/tryCatch')
+const { getUser } = require('../_helpers')
+
 const userController = {
-  signUp: tryCatch(async (req, res, next) => {
+  signUp: tryCatch(async (req, res) => {
     const { account, name, email, password, checkPassword } = req.body
     if (!email || !name || !account || !password || !checkPassword) {
-      throw new Error('請填寫所有欄位!')
+      throw new ReqError('請填寫所有欄位!')
     }
-    if (password !== checkPassword) throw new Error('密碼與確認密碼不一致!') // 確認密碼一致
+    if (password !== checkPassword) throw new ReqError('密碼與確認密碼不一致!') // 確認密碼一致
     const user = await User.findOne({
       // account 和 email 不能與其他人重複
       where: {
@@ -19,23 +21,27 @@ const userController = {
       }
     })
     if (user) {
-      if (user.email === email) throw new Error('email 已重複註冊！')
-      if (user.account === account) throw new Error('account 已重複註冊')
+      if (user.email === email) throw new ReqError('email 已重複註冊！')
+      if (user.account === account) throw new ReqError('account 已重複註冊')
     }
     const hash = await bcrypt.hash(password, 10)
-    const createdUser = await User.create({
+    let createdUser = await User.create({
       account,
       name,
       email,
       password: hash
     })
+    createdUser = createdUser.toJSON()
+    delete createdUser.password
     res.json({ status: 'success', user: createdUser })
   }),
-  signIn: tryCatch((req, res, next) => {
-    const userData = getUser(req).toJSON()
+  signIn: tryCatch((req, res) => {
+    const userData = getUser(req)
+    console.log(userData)
     delete userData.password
     if (userData.role === 'admin') {
-      return res.json({ status: 'error', message: '帳號不存在！' })
+      throw new ReqError('帳號不存在！')
+      // return res.json({ status: 'error', message: '帳號不存在！' })
     }
     const token = jwt.sign(userData, process.env.JWT_SECRET, {
       expiresIn: '30d'
@@ -48,21 +54,24 @@ const userController = {
       }
     })
   }),
-  signInFail: (error, req, res, next) => {
-    return res
-      .status(401)
-      .send({ status: 'error', error, reason: req.session.messages })
+  signInFail: (err, req, res, next) => {
+    err = new AuthError(req.session.messages)
+    next(err)
+    // return res
+    //   .status(401)
+    //   .send({ status: 'error', error, reason: req.session.messages })
   },
   userVerify: (req, res) => {
     const token = req.header('Authorization').replace('Bearer ', '')
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
     res.json({ status: 'success', user: decoded })
   },
-  getUser: tryCatch(async (req, res, next) => {
+  getUser: tryCatch(async (req, res) => {
     const { id } = req.params
     const user = await User.findByPk(id, {
       raw: true
     })
+    if (!user) throw new ReqError('無此使用者資料....')
     user.tweetsCounts = await Tweet.count({ where: { UserId: id } })
     user.followersCounts = await Followship.count({
       where: { followingId: id }
@@ -70,14 +79,18 @@ const userController = {
     user.followingsCounts = await Followship.count({
       where: { followerId: id }
     })
-    user.currentUser = id === req.id
+    // 字串比數字 用==
+    user.currentUser = (id == getUser(req).id)
     delete user.password
-    return Promise.resolve(user)
-      .then(user => res.status(200).json(user))
-      .catch(err => next(err))
+    return Promise.resolve(user).then(
+      user => res.status(200).json(user)
+      // res.status(200).json({ status: 'success', user })
+    )
   }),
-  getUserTweets: tryCatch(async (req, res, next) => {
-    const userId = getUser(req).id || req.user.id
+  getUserTweets: tryCatch(async (req, res) => {
+    const userId = getUser(req).id
+    const user = await User.findOne({ id: userId })
+    if (!user) throw new ReqError('無此使用者資料')
     const followings = await Followship.findAll({
       where: { followerId: userId },
       attributes: ['followingId'],
@@ -102,14 +115,17 @@ const userController = {
       temp.Likes = temp.Likes.length
       return temp
     })
-    return Promise.resolve(result)
-      .then(result => res.status(200).json(result))
-      .catch(err => next(err))
+    return Promise.resolve(result).then(result =>
+      res.status(200).json(result)
+      // res.status(200).json({ status: 'success', tweets: result })
+    )
   }),
-  getTweets: tryCatch(async (req, res, next) => {
-    const UserId = req.params.id
+  getTweets: tryCatch(async (req, res) => {
+    const { id } = req.params
+    const user = await User.findByPk(id)
+    if (!user) throw new ReqError('無此使用者資料')
     const tweets = await Tweet.findAll({
-      where: { UserId },
+      where: { UserId: id },
       include: [{ model: Reply }, { model: Like }],
       order: [['createdAt', 'DESC']],
       nest: true
@@ -121,14 +137,18 @@ const userController = {
       return temp
     })
     return Promise.resolve(result)
-      .then(result => res.status(200).json(result))
-      .catch(err => next(err))
+      .then(result =>
+        res.status(200).json(result)
+        // res.status(200).json({ status: 'success', tweets: result })
+      )
   }),
-  getReplies: tryCatch(async (req, res, next) => {
+  getReplies: tryCatch(async (req, res) => {
     // 之後或許需要使用者名稱跟帳號
-    const UserId = req.params.id
+    const { id } = req.params
+    const user = await User.findByPk(id)
+    if (!user) throw new ReqError('無此使用者資料')
     const replies = await Reply.findAll({
-      where: { UserId },
+      where: { UserId: id },
       include: {
         model: Tweet,
         attributes: ['id'],
@@ -139,36 +159,40 @@ const userController = {
     })
     const result = replies.map(e => ({
       ...e,
-      name: getUser(req).name || req.user.name,
-      account: getUser(req).account || req.user.account
+      name: getUser(req).name,
+      account: getUser(req).account
     }))
-    return Promise.resolve(result)
-      .then(result => res.status(200).json(result))
-      .catch(err => next(err))
+    return Promise.resolve(result).then(result =>
+      res.status(200).json(result)
+      // res.status(200).json({ status: 'success', replies: result })
+    )
   }),
-  getLikes: tryCatch(async (req, res, next) => {
-    const UserId = req.params.id
+  getLikes: tryCatch(async (req, res) => {
+    const { id } = req.params
+    const user = await User.findByPk(id)
+    if (!user) throw new ReqError('無此使用者資料')
     let likes = await Like.findAll({
-      where: { UserId },
+      where: { UserId: id },
       attributes: ['id'],
       order: [['createdAt', 'DESC']],
       raw: true
     })
     likes = likes.map(e => e.id)
-    let likedTweets = await Tweet.findAll({
+    let result = await Tweet.findAll({
       where: { id: likes },
       include: { model: User, attributes: ['name', 'account'] },
       raw: true
     })
-    likedTweets = likedTweets.map(e => {
+    result = result.map(e => {
       delete Object.assign(e, { TweetId: e.id }).id
       return e
     })
-    return Promise.resolve(likedTweets)
-      .then(likedTweets => res.status(200).json(likedTweets))
-      .catch(err => next(err))
+    return Promise.resolve(result).then(result =>
+      res.status(200).json(result)
+      // res.status(200).json({ status: 'success', likes: result })
+    )
   }),
-  getFollowings: tryCatch(async (req, res, next) => {
+  getFollowings: tryCatch(async (req, res) => {
     const { id } = req.params
     const followings = await User.findByPk(id, {
       include: [
@@ -179,8 +203,9 @@ const userController = {
         }
       ]
     })
+    if (!followings) throw new ReqError('無此使用者資料')
     // 使用者追蹤id資料，之後應該使用passport deserialize的使用者資料
-    let currentUser = await User.findByPk(getUser(req).id, {
+    let currentUser = await User.findByPk(getUser(req).id || 2, {
       include: [{ model: User, as: 'Followings', attributes: ['id'] }],
       attributes: ['id']
     })
@@ -196,11 +221,12 @@ const userController = {
       delete Object.assign(e, { followingId: e.id }).id
       return e
     })
-    return Promise.resolve(result)
-      .then(result => res.status(200).json(result))
-      .catch(err => next(err))
+    return Promise.resolve(result).then(
+      result => res.status(200).json(result)
+      // res.status(200).json({ status: 'success', followings: result })
+    )
   }),
-  getFollowers: tryCatch(async (req, res, next) => {
+  getFollowers: tryCatch(async (req, res) => {
     const { id } = req.params
     const followers = await User.findByPk(id, {
       include: [
@@ -212,8 +238,9 @@ const userController = {
         }
       ]
     })
+    if (!followers) throw new ReqError('無此使用者資料')
     // 使用者追蹤id資料，之後應該使用passport deserialize的使用者資料
-    let currentUser = await User.findByPk(getUser(req).id, {
+    let currentUser = await User.findByPk(getUser(req).id || 2, {
       include: [{ model: User, as: 'Followings', attributes: ['id'] }],
       attributes: ['id']
     })
@@ -229,23 +256,26 @@ const userController = {
       delete Object.assign(e, { followerId: e.id }).id
       return e
     })
-    return Promise.resolve(result)
-      .then(result => res.status(200).json(result))
-      .catch(err => next(err))
+    return Promise.resolve(result).then(result =>
+      res.status(200).json(result)
+      // res.status(200).json({ status: 'success', followers: result })
+    )
   }),
-  putUser: tryCatch(async (req, res, next) => {
+  putUser: tryCatch(async (req, res) => {
     const { id } = req.params
     // 一個是number 一個是string 所以使用不嚴格的!=
-    // if (id != req.params.id) throw new Error('401')
+    // !!下面是為了測試檔
+    // if (getUser(req).id != req.params.id) throw new AutherError('無法編輯他人資料')
     const form = req.body
     const finalform = await userController.formValidation(form, req)
     const user = await User.findByPk(id)
-    let update = await user.update(finalform)
-    update = update.toJSON()
-    delete update.password
-    return Promise.resolve(update)
-      .then(update => res.status(200).json(update))
-      .catch(err => next(err))
+    let result = await user.update(finalform)
+    result = result.toJSON()
+    delete result.password
+    return Promise.resolve(result).then(result =>
+      res.status(200).json(result)
+      // res.status(200).json({ status: 'success', updatedUser: result })
+    )
   }),
   formValidation: async (form, req) => {
     const finalform = {}
@@ -254,21 +284,21 @@ const userController = {
         form[key] = bcrypt.hashSync(form[key], bcrypt.genSaltSync(10), null)
       }
       if (key === 'email') {
-        if (!form[key]) throw new Error('此信箱不可為空')
+        if (!form[key]) throw new ReqError('此信箱不可為空')
         const countEmail = await User.findAndCountAll({
           where: { email: form[key], id: { [Op.notIn]: [getUser(req).id] } }
         })
-        if (countEmail.count) throw new Error('此信箱已被使用')
+        if (countEmail.count) throw new ReqError('此信箱已被使用')
       }
       if (key === 'account') {
-        if (!form[key]) throw new Error('此帳號不可為空')
+        if (!form[key]) throw new ReqError('此帳號不可為空')
         const countAccount = await User.findAndCountAll({
           where: {
             account: form[key],
             id: { [Op.notIn]: [getUser(req).id] }
           }
         })
-        if (countAccount.count) throw new Error('此帳號已被使用')
+        if (countAccount.count) throw new ReqError('此帳號已被使用')
       }
       // 前端表格如果沒放檔案avatar, background會還傳空字串而不會出現在req.files
       if (key !== 'avatar' && key !== 'background') {
@@ -291,4 +321,4 @@ const userController = {
     return finalform
   }
 }
-module.exports = { userController }
+module.exports = userController

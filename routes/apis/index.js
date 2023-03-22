@@ -1,5 +1,6 @@
 const express = require('express')
 const router = express.Router()
+
 const passport = require('passport')
 const userController = require('../../controllers/user-controller')
 const { authenticatedAdmin, authenticated } = require('../../middleware/api-auth')
@@ -13,5 +14,6 @@ router.post('/users/login', passport.authenticate('local', { session: false, fai
 
 router.use('/admin', authenticated, authenticatedAdmin, admin)
 router.use('/users', authenticated, users)
+
 
 module.exports = router

@@ -1,6 +1,6 @@
-const jwt = require('jsonwebtoken')
-const { Op } = require('sequelize')
+const { User } = require('../models')
 const bcrypt = require('bcryptjs')
+<<<<<<< HEAD
 const { User, Tweet, Followship, Reply, Like } = require('../models')
 const { ReqError, AuthError, AutherError } = require('../helpers/errorInstance')
 const { imgurFileHandler } = require('../helpers/file-helpers')
@@ -18,6 +18,28 @@ const userController = {
       // account 和 email 不能與其他人重複
       where: {
         [Op.or]: [{ email }, { account }]
+=======
+const { Op } = require('sequelize')
+const jwt = require('jsonwebtoken')
+const { getUser } = require('../_helpers')
+const userController = {
+  signUp: async (req, res, next) => {
+    try {
+      const { account, name, email, password, passwordCheck } = req.body
+      if (!email || !name || !account || !password || !passwordCheck) throw new Error('請填寫所有欄位!')
+      if (password !== passwordCheck) throw new Error('密碼與確認密碼不一致!')// 確認密碼一致
+      const user = await User.findOne({ // account 和 email 不能與其他人重複
+        where: {
+          [Op.or]: [
+            { email },
+            { account }
+          ]
+        }
+      })
+      if (user) {
+        if (user.email === email) throw new Error('email 已重複註冊！')
+        if (user.account === account) throw new Error('account 已重複註冊')
+>>>>>>> master
       }
     })
     if (user) {
@@ -321,4 +343,8 @@ const userController = {
     return finalform
   }
 }
+<<<<<<< HEAD
 module.exports = userController
+=======
+module.exports =  userController 
+>>>>>>> master

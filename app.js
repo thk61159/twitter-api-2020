@@ -1,20 +1,20 @@
 if (process.env.NODE_ENV !== 'production') {
   require('dotenv').config()
 }
-const express = require('express')
-const session = require('express-session')
-const passport = require('./config/passport')
-const helpers = require('./_helpers')
+// require module
 const methodOverride = require('method-override')
-const routes = require('./routes')
+const session = require('express-session')
+const express = require('express')
 
+// require self-made module
+const passport = require('./config/passport')
+const { apis } = require('./routes')
+
+// app setting
 const app = express()
 const port = process.env.PORT || 3000
-app.use(methodOverride('_method'))
-app.use(express.urlencoded({ extended: true }))
-
-const { apis } = require('./routes')
 app.use(express.urlencoded({ extended: true }))// req.body
+app.use(methodOverride('_method'))
 app.use(express.json())// json
 
 app.use(session({
@@ -31,7 +31,7 @@ app.use((req, res, next) => {
 })
 
 app.use('/api', apis)
-app.get('/', (req, res) => res.send('Hello World!'))
+
 app.listen(port, () => console.log(`Example app listening on port ${port}!`))
 
 module.exports = app

@@ -1,6 +1,7 @@
 const router = require('express').Router()
 const users = require('./user')
 const admin = require('./admin')
+const tweets = require('./tweet')
 const passport = require('passport')
 const { authenticated, authenticatedAdmin } = require('../../middleware/api-auth')
 const userController = require('../../controllers/user-controller')
@@ -18,6 +19,7 @@ router.post('/users/login', passport.authenticate('local', { session: false, fai
 
 router.use('/admin', authenticated, authenticatedAdmin, admin)
 router.use('/users', authenticated, users)
+router.use('/tweets', authenticated, tweets)
 
 router.use('/', apiErrorHandler)
 module.exports = router

@@ -1,5 +1,5 @@
 const { tryCatch } = require('../helpers/tryCatch')
-const { Like, Tweet } = require('../models')
+const { Like, Tweet, Reply, User } = require('../models')
 const { getUser } = require('../_helpers')
 const { ReqError } = require('../helpers/errorInstance')
 const tweetController = {
@@ -27,7 +27,12 @@ const tweetController = {
     res.status(200).json({ message: 'user unlike success' }) // 不曉得為甚麼like.destroy會報錯not a function 所以先用where查詢的方式刪除
   }),
   getReplies: tryCatch(async (req, res) => {
-
+    const TweetId = req.params.tweetId
+    const replies = await Reply.findAll({
+      where: { TweetId },
+      include: [User]
+    })
+    res.status(200).json(replies)
   }),
   postReplies: tryCatch(async (req, res) => {
 

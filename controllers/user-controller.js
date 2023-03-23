@@ -1,8 +1,8 @@
 const bcrypt = require('bcryptjs')
-const { Op } = require('sequelize')
-const { User, Tweet, Followship, Reply, Like } = require('../models')
 const jwt = require('jsonwebtoken')
+const { Op, Model } = require('sequelize')
 const { ReqError, AuthError, AutherError } = require('../helpers/errorInstance')
+const { User, Tweet, Followship, Reply, Like } = require('../models')
 const { imgurFileHandler } = require('../helpers/file-helpers')
 const { tryCatch } = require('../helpers/tryCatch')
 const { getUser } = require('../_helpers')
@@ -37,7 +37,6 @@ const userController = {
   }),
   signIn: tryCatch((req, res) => {
     const userData = getUser(req).toJSON()
-    console.log(userData)
     delete userData.password
     if (userData.role === 'admin') {
       throw new ReqError('帳號不存在！')
@@ -55,11 +54,9 @@ const userController = {
     })
   }),
   signInFail: (err, req, res, next) => {
+    if (err instanceof ReqError) return next(err)
     err = new AuthError(req.session.messages)
     next(err)
-    // return res
-    //   .status(401)
-    //   .send({ status: 'error', error, reason: req.session.messages })
   },
   userVerify: (req, res) => {
     const token = req.header('Authorization').replace('Bearer ', '')
@@ -67,6 +64,9 @@ const userController = {
     res.json({ status: 'success', user: decoded })
   },
   getUser: tryCatch(async (req, res) => {
+    const userData = getUser(req) instanceof Model
+	    ? getUser(req).toJSON()
+	    : getUser(req).dataValues
     const { id } = req.params
     const user = await User.findByPk(id, {
       raw: true
@@ -80,7 +80,7 @@ const userController = {
       where: { followerId: id }
     })
     // 字串比數字 用==
-    user.currentUser = (id == getUser(req).id)
+    user.currentUser = id == userData.id
     delete user.password
     return Promise.resolve(user).then(
       user => res.status(200).json(user)
@@ -88,17 +88,19 @@ const userController = {
     )
   }),
   getUserTweets: tryCatch(async (req, res) => {
-    const userId = getUser(req).id
-    const user = await User.findOne({ id: userId })
+    const userData = getUser(req) instanceof Model
+      ? getUser(req).toJSON()
+      : getUser(req).dataValues
+    const user = await User.findByPk(userData.id)
     if (!user) throw new ReqError('無此使用者資料')
     const followings = await Followship.findAll({
-      where: { followerId: userId },
+      where: { followerId: userData.id },
       attributes: ['followingId'],
       raw: true
     })
     // Set可以拿掉 目前種子資料難以避免重複追蹤
     const showIds = [...new Set(followings.map(e => e.followingId))]
-    showIds.push(userId)
+    showIds.push(userData.id)
     const tweets = await Tweet.findAll({
       where: { UserId: showIds },
       include: [
@@ -143,6 +145,9 @@ const userController = {
       )
   }),
   getReplies: tryCatch(async (req, res) => {
+    const userData = getUser(req) instanceof Model
+      ? getUser(req).toJSON()
+      : getUser(req).dataValues
     // 之後或許需要使用者名稱跟帳號
     const { id } = req.params
     const user = await User.findByPk(id)
@@ -159,8 +164,8 @@ const userController = {
     })
     const result = replies.map(e => ({
       ...e,
-      name: getUser(req).name,
-      account: getUser(req).account
+      name: userData.name,
+      account: userData.account
     }))
     return Promise.resolve(result).then(result =>
       res.status(200).json(result)
@@ -193,7 +198,10 @@ const userController = {
     )
   }),
   getFollowings: tryCatch(async (req, res) => {
-    const userData = getUser(req).toJSON()
+    console.log(getUser(req) instanceof Model)
+    const userData = !(getUser(req) instanceof Model)
+      ? getUser(req).dataValues
+      : getUser(req).toJSON()
     const { id } = req.params
     const followings = await User.findByPk(id, {
       include: [
@@ -209,9 +217,9 @@ const userController = {
     const result = followings.toJSON().Followings.map(e => {
       e = { ...e }
       delete Object.assign(e, { followingId: e.id }).id
-      e.currentfollowed = userData.Followings.some(
-        element => element.id === e.followingId
-      )
+      e.currentfollowed = userData.Followings
+        ? userData.Followings.some(element => element.id === e.followingId)
+        : false
       delete e.Followship
       return e
     })
@@ -221,7 +229,9 @@ const userController = {
     )
   }),
   getFollowers: tryCatch(async (req, res) => {
-    const userData = getUser(req).toJSON()
+    const userData = !(getUser(req) instanceof Model)
+      ? getUser(req).dataValues
+      : getUser(req).toJSON()
     const { id } = req.params
     const followers = await User.findByPk(id, {
       include: [
@@ -237,9 +247,11 @@ const userController = {
     const result = followers.toJSON().Followers.map(e => {
       e = { ...e }
       delete Object.assign(e, { followerId: e.id }).id
-      e.currentfollowed = userData.Followings.some(
-        element => element.id === e.followerId
-      )
+      e.currentfollowed = userData.Followings
+        ? userData.Followings.some(
+          element => element.id === e.followerId
+        )
+        : false
       delete e.Followship
       return e
     })
@@ -249,10 +261,13 @@ const userController = {
     )
   }),
   putUser: tryCatch(async (req, res) => {
+    const userData = getUser(req) instanceof Model
+      ? getUser(req).toJSON()
+      : getUser(req).dataValues
     const { id } = req.params
     // 一個是number 一個是string 所以使用不嚴格的!=
-    // !!下面是為了測試檔
-    // if (getUser(req).id != req.params.id) throw new AutherError('無法編輯他人資料')
+    if (userData.id != id) throw new AutherError('無法編輯他人資料')
+
     const form = req.body
     const finalform = await userController.formValidation(form, req)
     const user = await User.findByPk(id)

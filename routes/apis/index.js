@@ -6,7 +6,6 @@ const passport = require('passport')
 const { authenticated, authenticatedAdmin } = require('../../middleware/api-auth')
 const userController = require('../../controllers/user-controller')
 const adminController = require('../../controllers/admin-controller')
-const tweetController = require('../../controllers/tweet-controller')
 const { apiErrorHandler } = require('../../middleware/error-handler')
 
 router.use((req, res, next) => {

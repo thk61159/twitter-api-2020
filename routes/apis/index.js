@@ -17,9 +17,10 @@ router.post('/users', userController.signUp)
 router.post('/admin/login', passport.authenticate('local', { session: false, failureMessage: true, failWithError: true }), adminController.signIn, adminController.signInFail)
 router.post('/users/login', passport.authenticate('local', { session: false, failureMessage: true, failWithError: true }), userController.signIn, userController.signInFail)
 
-router.use('/admin', authenticated, authenticatedAdmin, admin)
-router.use('/users', authenticated, users)
-router.use('/tweets', authenticated, tweets)
+router.use(authenticated)
+router.use('/admin', authenticatedAdmin, admin)
+router.use('/users', users)
+router.use('/tweets', tweets)
 
 router.use('/', apiErrorHandler)
 module.exports = router

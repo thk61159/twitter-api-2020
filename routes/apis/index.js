@@ -21,6 +21,7 @@ router.post('/users/login', passport.authenticate('local', { session: false, fai
 router.use(authenticated)
 router.use('/admin', authenticatedAdmin, admin)
 router.use('/users', users)
+router.get('/tweets/', tweetController.getTweets)
 router.post('/tweets', upload.single('image'), tweetController.postTweet)
 router.get('/tweets/:tweet_id', tweetController.getTweet)
 

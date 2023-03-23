@@ -87,41 +87,6 @@ const userController = {
       // res.status(200).json({ status: 'success', user })
     )
   }),
-  getUserTweets: tryCatch(async (req, res) => {
-    const userData = getUser(req) instanceof Model
-      ? getUser(req).toJSON()
-      : getUser(req).dataValues
-    const user = await User.findByPk(userData.id)
-    if (!user) throw new ReqError('無此使用者資料')
-    const followings = await Followship.findAll({
-      where: { followerId: userData.id },
-      attributes: ['followingId'],
-      raw: true
-    })
-    // Set可以拿掉 目前種子資料難以避免重複追蹤
-    const showIds = [...new Set(followings.map(e => e.followingId))]
-    showIds.push(userData.id)
-    const tweets = await Tweet.findAll({
-      where: { UserId: showIds },
-      include: [
-        { model: User, as: 'poster', attributes: ['name', 'account'] },
-        { model: Reply },
-        { model: Like }
-      ],
-      order: [['createdAt', 'DESC']], // or ['id', 'DESC'] 因為理論上id越後面越新
-      nest: true
-    })
-    const result = tweets.map(e => {
-      const temp = e.toJSON()
-      temp.Replies = temp.Replies.length
-      temp.Likes = temp.Likes.length
-      return temp
-    })
-    return Promise.resolve(result).then(result =>
-      res.status(200).json(result)
-      // res.status(200).json({ status: 'success', tweets: result })
-    )
-  }),
   getTweets: tryCatch(async (req, res) => {
     const { id } = req.params
     const user = await User.findByPk(id)

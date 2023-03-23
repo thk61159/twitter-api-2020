@@ -1,10 +1,46 @@
-const { ReqError, AuthError, AutherError } = require('../helpers/errorInstance')
+const { Model } = require('sequelize')
+const { ReqError } = require('../helpers/errorInstance')
 const { User, Tweet, Followship, Reply, Like } = require('../models')
 const { imgurFileHandler } = require('../helpers/file-helpers')
 const { tryCatch } = require('../helpers/tryCatch')
 const { getUser } = require('../_helpers')
 // 其實是tweet才對但就先放這
 const tweetController = {
+  getTweets: tryCatch(async (req, res) => {
+    const userData = getUser(req) instanceof Model
+      ? getUser(req).toJSON()
+      : getUser(req).dataValues
+    const user = await User.findByPk(userData.id)
+    if (!user) throw new ReqError('無此使用者資料')
+    const followings = await Followship.findAll({
+      where: { followerId: userData.id },
+      attributes: ['followingId'],
+      raw: true
+    })
+    // Set可以拿掉 目前種子資料難以避免重複追蹤
+    const showIds = [...new Set(followings.map(e => e.followingId))]
+    showIds.push(userData.id)
+    const tweets = await Tweet.findAll({
+      where: { UserId: showIds },
+      include: [
+        { model: User, as: 'poster', attributes: ['name', 'account'] },
+        { model: Reply },
+        { model: Like }
+      ],
+      order: [['createdAt', 'DESC']], // or ['id', 'DESC'] 因為理論上id越後面越新
+      nest: true
+    })
+    const result = tweets.map(e => {
+      const temp = e.toJSON()
+      temp.Replies = temp.Replies.length
+      temp.Likes = temp.Likes.length
+      return temp
+    })
+    return Promise.resolve(result).then(
+      result => res.status(200).json(result)
+      // res.status(200).json({ status: 'success', tweets: result })
+    )
+  }),
   getTweet: tryCatch(async (req, res) => {
     const TweetId = req.params.tweet_id
     const tweet = await Tweet.findByPk(TweetId, {
@@ -24,7 +60,9 @@ const tweetController = {
     res.send(tweet)
   }),
   postTweet: tryCatch(async (req, res) => {
-    const userData = getUser(req).toJSON()
+    const userData = !(getUser(req) instanceof Model)
+      ? getUser(req).dataValues
+      : getUser(req).toJSON()
     const { description } = req.body
     const { file } = req
     const imageURL = file ? await imgurFileHandler(file) : null
@@ -34,9 +72,9 @@ const tweetController = {
       description,
       image: imageURL
     })
-    return Promise.resolve(result)
-      .then(result =>
-        res.status(200).json(result.toJSON()))
+    return Promise.resolve(result).then(result =>
+      res.status(200).json(result.toJSON())
+    )
   })
 }
 module.exports = tweetController

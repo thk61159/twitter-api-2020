@@ -23,7 +23,7 @@ router.use(authenticated)
 router.use('/admin', authenticatedAdmin, admin)
 router.use('/users', users)
 router.use('/tweets', tweets)
-router.use('/followship', followships)
+router.use('/followships', followships)
 
 router.use('/', apiErrorHandler)
 module.exports = router

@@ -65,8 +65,8 @@ const userController = {
   },
   getUser: tryCatch(async (req, res) => {
     const userData = getUser(req) instanceof Model
-	    ? getUser(req).toJSON()
-	    : getUser(req).dataValues
+      ? getUser(req).toJSON()
+      : getUser(req).dataValues
     const { id } = req.params
     const user = await User.findByPk(id, {
       raw: true
@@ -198,7 +198,6 @@ const userController = {
     )
   }),
   getFollowings: tryCatch(async (req, res) => {
-    console.log(getUser(req) instanceof Model)
     const userData = !(getUser(req) instanceof Model)
       ? getUser(req).dataValues
       : getUser(req).toJSON()

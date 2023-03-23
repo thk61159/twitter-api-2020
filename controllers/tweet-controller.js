@@ -104,10 +104,24 @@ const tweetController = {
       where: { TweetId },
       include: [User]
     })
+    if (!replies.length) throw new ReqError('資料庫無此筆資料!')
     res.status(200).json(replies)
   }),
   postReplies: tryCatch(async (req, res) => {
-
+    const TweetId = req.params.tweet_id
+    const UserId = getUser(req).dataValues.id
+    const tweet = await Tweet.findByPk(TweetId)
+    if (!tweet) throw new ReqError('資料庫無此筆資料!')
+    const { comment } = req.body
+    const { file } = req
+    const image = file ? await imgurFileHandler(file) : null
+    const result = await Reply.create({
+      TweetId,
+      UserId,
+      comment,
+      image
+    })
+    res.status(200).json(result.toJSON())
   })
 }
 module.exports = tweetController

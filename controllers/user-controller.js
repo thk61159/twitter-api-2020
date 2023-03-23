@@ -37,6 +37,7 @@ const userController = {
   }),
   signIn: tryCatch((req, res) => {
     const userData = getUser(req).toJSON()
+    console.log(userData)
     delete userData.password
     if (userData.role === 'admin') {
       throw new ReqError('帳號不存在！')
@@ -101,7 +102,7 @@ const userController = {
     const tweets = await Tweet.findAll({
       where: { UserId: showIds },
       include: [
-        { model: User, attributes: ['name', 'account'] },
+        { model: User, as: 'poster', attributes: ['name', 'account'] },
         { model: Reply },
         { model: Like }
       ],
@@ -151,7 +152,7 @@ const userController = {
       include: {
         model: Tweet,
         attributes: ['id'],
-        include: { model: User, attributes: ['account'] }
+        include: { model: User, as: 'poster', attributes: ['account'] }
       },
       order: [['createdAt', 'DESC']],
       raw: true
@@ -173,13 +174,13 @@ const userController = {
     let likes = await Like.findAll({
       where: { UserId: id },
       attributes: ['id'],
-      order: [['createdAt', 'DESC']],
+      order: [['updatedAt', 'DESC']],
       raw: true
     })
     likes = likes.map(e => e.id)
     let result = await Tweet.findAll({
       where: { id: likes },
-      include: { model: User, attributes: ['name', 'account'] },
+      include: { model: User, as: 'poster', attributes: ['name', 'account'] },
       raw: true
     })
     result = result.map(e => {
@@ -192,32 +193,26 @@ const userController = {
     )
   }),
   getFollowings: tryCatch(async (req, res) => {
+    const userData = getUser(req).toJSON()
     const { id } = req.params
     const followings = await User.findByPk(id, {
       include: [
         {
           model: User,
           as: 'Followings',
-          attributes: ['id', 'name', 'avatar', 'introduction']
+          attributes: ['id', 'name', 'avatar', 'introduction'],
+          order: [['updatedAt', 'DESC']]
         }
       ]
     })
     if (!followings) throw new ReqError('無此使用者資料')
-    // 使用者追蹤id資料，之後應該使用passport deserialize的使用者資料
-    let currentUser = await User.findByPk(getUser(req).id || 2, {
-      include: [{ model: User, as: 'Followings', attributes: ['id'] }],
-      attributes: ['id']
-    })
-    currentUser = currentUser.toJSON()
-    // -----------------------------------------------------
     const result = followings.toJSON().Followings.map(e => {
-      e = {
-        ...e,
-        currentfollowed: currentUser.Followings.some(
-          element => element.id === e.id
-        )
-      }
+      e = { ...e }
       delete Object.assign(e, { followingId: e.id }).id
+      e.currentfollowed = userData.Followings.some(
+        element => element.id === e.followingId
+      )
+      delete e.Followship
       return e
     })
     return Promise.resolve(result).then(
@@ -226,6 +221,7 @@ const userController = {
     )
   }),
   getFollowers: tryCatch(async (req, res) => {
+    const userData = getUser(req).toJSON()
     const { id } = req.params
     const followers = await User.findByPk(id, {
       include: [
@@ -233,26 +229,18 @@ const userController = {
           model: User,
           as: 'Followers',
           attributes: ['id', 'name', 'avatar', 'introduction'],
-          order: [['createdAt', 'DESC']]
+          order: [['updatedAt', 'DESC']]
         }
       ]
     })
     if (!followers) throw new ReqError('無此使用者資料')
-    // 使用者追蹤id資料，之後應該使用passport deserialize的使用者資料
-    let currentUser = await User.findByPk(getUser(req).id || 2, {
-      include: [{ model: User, as: 'Followings', attributes: ['id'] }],
-      attributes: ['id']
-    })
-    currentUser = currentUser.toJSON()
-    // -----------------------------------------------------
     const result = followers.toJSON().Followers.map(e => {
-      e = {
-        ...e,
-        currentfollowed: currentUser.Followings.some(
-          element => element.id === e.id
-        )
-      }
+      e = { ...e }
       delete Object.assign(e, { followerId: e.id }).id
+      e.currentfollowed = userData.Followings.some(
+        element => element.id === e.followerId
+      )
+      delete e.Followship
       return e
     })
     return Promise.resolve(result).then(result =>

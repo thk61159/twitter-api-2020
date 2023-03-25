@@ -51,7 +51,7 @@ const tweetController = {
           as: 'poster'
         }
       ],
-      raw: true
+      nest: true
     })
     if (!tweet) throw new ReqError('此推文不存在')
     tweet.Replies = await Reply.count({ where: { TweetId } })

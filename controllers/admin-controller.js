@@ -52,7 +52,8 @@ const adminController = {
       const tweets = await Tweet.findAll({
         include: [
           { model: User, as: 'poster', attributes: ['id', 'name', 'account', 'avatar'] }
-        ]
+        ],
+        nest: true
       })
       res.status(200).json(tweets)
     } catch (error) {

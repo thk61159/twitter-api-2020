@@ -134,7 +134,7 @@ const userController = {
         include: { model: User, as: 'poster', attributes: ['account'] }
       },
       order: [['createdAt', 'DESC']],
-      raw: true
+      nest: true
     })
     const result = replies.map(e => ({
       ...e,

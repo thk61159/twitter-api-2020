@@ -23,7 +23,7 @@ const tweetController = {
     const tweets = await Tweet.findAll({
       where: { UserId: showIds },
       include: [
-        { model: User, as: 'poster', attributes: ['name', 'account'] },
+        { model: User, as: 'poster', attributes: ['name', 'account', 'avatar'] },
         { model: Reply },
         { model: Like }
       ],
@@ -94,6 +94,7 @@ const tweetController = {
       Tweet.findByPk(TweetId),
       Like.findOne({ where: { UserId, TweetId } })
     ])
+    console.log(like, tweet)
     if (!like || !tweet) throw new ReqError('資料庫無此筆資料!')
     const deletedLikeData = await like.destroy()
     res.status(200).json(deletedLikeData)
@@ -102,7 +103,9 @@ const tweetController = {
     const TweetId = req.params.tweet_id
     const replies = await Reply.findAll({
       where: { TweetId },
-      include: [User]
+      include: [
+        { model: User, attributes: ['id', 'avatar', 'name', 'account', 'createdAt'] }
+      ]
     })
     if (!replies.length) throw new ReqError('資料庫無此筆資料!')
     res.status(200).json(replies)

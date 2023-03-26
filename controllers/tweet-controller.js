@@ -11,9 +11,9 @@ const tweetController = {
     const userData = getUser(req) instanceof Model
       ? getUser(req).toJSON()
       : getUser(req).dataValues
-    const user = await User.findByPk(userData.id)
-    if (!user) throw new ReqError('無此使用者資料')
-    const followings = await Followship.findAll({
+      const user = await User.findByPk(userData.id)
+      if (!user) throw new ReqError('無此使用者資料')
+      const followings = await Followship.findAll({
       where: { followerId: userData.id },
       attributes: ['followingId'],
       raw: true
@@ -35,6 +35,7 @@ const tweetController = {
       const temp = e.toJSON()
       temp.Replies = temp.Replies.length
       temp.Likes = temp.Likes.length
+      temp.isLiked = userData.Likes.some(like => like.TweetId === e.id)
       return temp
     })
     return Promise.resolve(result).then(

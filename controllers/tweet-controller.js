@@ -24,7 +24,7 @@ const tweetController = {
     const tweets = await Tweet.findAll({
       where: { UserId: showIds },
       include: [
-        { model: User, as: 'poster', attributes: ['name', 'account', 'avatar'] },
+        { model: User, as: 'poster', attributes: ['id','name', 'account', 'avatar'] },
         { model: Reply },
         { model: Like }
       ],

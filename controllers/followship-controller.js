@@ -50,7 +50,7 @@ const adminController = {
     const result = users.map(user => {
       return {
         user,
-        isFollowed: currentUser.Followings.some(fu => fu.id === user.id) // fu = following user
+        currentIsFollowed: currentUser.Followings.some(fu => fu.id === user.id) // fu = following user
       }
     })
     res.status(200).json(result)

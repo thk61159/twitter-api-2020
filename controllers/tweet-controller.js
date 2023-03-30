@@ -31,13 +31,19 @@ const tweetController = {
       order: [['createdAt', 'DESC']], // or ['id', 'DESC'] 因為理論上id越後面越新
       nest: true
     })
-    const result = tweets.map(e => {
+    let result = tweets.map(e => {
       const temp = e.toJSON()
       temp.Replies = temp.Replies.length
       temp.Likes = temp.Likes.length
       temp.currentIsLiked = userData.Likes?.some(like => like.TweetId === e.id)
       return temp
     })
+    if (!tweets.length) {
+      result = await Tweet.findAll({
+        order: [['createdAt', 'DESC']],
+        limit: 10
+      })
+    }
     return Promise.resolve(result).then(
       result => res.status(200).json(result)
     )

@@ -114,6 +114,17 @@ const tweetController = {
   }),
   getReplies: tryCatch(async (req, res) => {
     const TweetId = req.params.tweet_id
+    const tweet = await Tweet.findByPk(TweetId, {
+      include: [
+        { model: User, as: 'poster' }
+      ],
+      raw: true,
+      nest: true
+    })
+    const poster = {
+      id: tweet.poster.id,
+      account: tweet.poster.account
+    }
     const replies = await Reply.findAll({
       where: { TweetId },
       include: [
@@ -121,7 +132,11 @@ const tweetController = {
       ]
     })
     if (!replies.length) throw new ReqError('資料庫無此筆資料或尚無留言!')
-    res.status(200).json(replies)
+    const result = replies.map(reply => ({
+      reply,
+      poster
+    }))
+    res.status(200).json(result)
   }),
   postReplies: tryCatch(async (req, res) => {
     const TweetId = req.params.tweet_id

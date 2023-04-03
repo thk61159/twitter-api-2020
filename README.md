@@ -54,9 +54,13 @@ npx sequelize db:create
 ```
 npm run migrate & npm run seed
 ```
-7. 執行
+7. 執行(windows)
 ```
 npm run dev
+```
+7. 執行(mac)
+```
+npm run devMac
 ```
 如成功終端機會顯示:[Example app listening on port 4000!]
 

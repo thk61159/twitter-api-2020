@@ -33,6 +33,9 @@ app.use((req, res, next) => {
 })
 
 app.use('/api', apis)
+app.get('/', (req, res) => {
+  res.send('welcome')
+})
 
 app.listen(port, () => console.log(`Example app listening on port ${port}!`))
 

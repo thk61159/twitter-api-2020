@@ -15,8 +15,9 @@
     "logging": false
   },
   "production": {
-    "use_env_variable": "CLEARDB_DATABASE_URL"
-  },
+		"use_env_variable": "PROD_DATABASE_URL",
+		"dialect": "mysql"
+	},
   "travis": {
     "username": "travis",
     "database": "ac_twitter_workspace_test",

@@ -6,7 +6,7 @@ const { ReqError, AuthError, AutherError } = require('../helpers/errorInstance')
 const { User, Tweet, Followship, Reply, Like } = require('../models')
 const { imgurFileHandler } = require('../helpers/file-helpers')
 const { tryCatch } = require('../helpers/tryCatch')
-const { getUser } = require('../_helpers')
+const getUser = require('../_helpers').getUser
 
 const userController = {
   signUp: tryCatch(async (req, res) => {
@@ -88,10 +88,7 @@ const userController = {
     // 字串比數字 用==
     user.currentUser = id == userData.id
     user.currentfollowed = userData.Followings?.some(userF => userF.id === Number(id))
-    return Promise.resolve(user).then(
-      user => res.status(200).json(user)
-      // res.status(200).json({ status: 'success', user })
-    )
+    res.status(200).json(user)
   }),
   getTweets: tryCatch(async (req, res) => {
     const { id } = req.params
@@ -112,11 +109,7 @@ const userController = {
       temp.avatar = user.avatar
       return temp
     })
-    return Promise.resolve(result)
-      .then(result =>
-        res.status(200).json(result)
-        // res.status(200).json({ status: 'success', tweets: result })
-      )
+    res.status(200).json(result)
   }),
   getReplies: tryCatch(async (req, res) => {
     const userData = getUser(req) instanceof Model
@@ -142,10 +135,7 @@ const userController = {
       account: userData.account,
       avatar: user.avatar
     }))
-    return Promise.resolve(result).then(result =>
-      res.status(200).json(result)
-      // res.status(200).json({ status: 'success', replies: result })
-    )
+    res.status(200).json(result)
   }),
   getLikes: tryCatch(async (req, res) => { // 可優化 將SQL語法轉為Squelize
     const { id } = req.params
@@ -180,10 +170,7 @@ const userController = {
       })
       return LikedPost
     })
-    return Promise.resolve(result).then(result =>
-      res.status(200).json(result)
-      // res.status(200).json({ status: 'success', likes: result })
-    )
+    res.status(200).json(result)
   }),
   getFollowings: tryCatch(async (req, res) => {
     const userData = !(getUser(req) instanceof Model)
@@ -210,10 +197,7 @@ const userController = {
       delete e.Followship
       return e
     })
-    return Promise.resolve(result).then(
-      result => res.status(200).json(result)
-      // res.status(200).json({ status: 'success', followings: result })
-    )
+    res.status(200).json(result)
   }),
   getFollowers: tryCatch(async (req, res) => {
     const userData = !(getUser(req) instanceof Model)
@@ -242,10 +226,7 @@ const userController = {
       delete e.Followship
       return e
     })
-    return Promise.resolve(result).then(result =>
-      res.status(200).json(result)
-      // res.status(200).json({ status: 'success', followers: result })
-    )
+    res.status(200).json(result)
   }),
   putUser: tryCatch(async (req, res) => {
     const userData = getUser(req) instanceof Model
@@ -262,10 +243,7 @@ const userController = {
     })
     let result = await user.update(finalform)
     result = result.toJSON()
-    return Promise.resolve(result).then(result =>
-      res.status(200).json(result)
-      // res.status(200).json({ status: 'success', updatedUser: result })
-    )
+    res.status(200).json(result)
   }),
   formValidation: async (form, req) => {
     const finalform = {}

@@ -44,9 +44,7 @@ const tweetController = {
         limit: 10
       })
     }
-    return Promise.resolve(result).then(
-      result => res.status(200).json(result)
-    )
+    res.status(200).json(result)
   }),
   getTweet: tryCatch(async (req, res) => {
     const TweetId = req.params.tweet_id
@@ -85,9 +83,7 @@ const tweetController = {
       description,
       image: imageURL
     })
-    return Promise.resolve(result).then(result =>
-      res.status(200).json(result.toJSON())
-    )
+    res.status(200).json(result.toJSON())
   }),
   like: tryCatch(async (req, res) => {
     const UserId = getUser(req).dataValues.id
@@ -98,7 +94,6 @@ const tweetController = {
     ])
     if (like || !tweet) throw new ReqError('資料庫無此筆資料或發送重複請求!')
     const result = await Like.create({ UserId, TweetId })
-    // const result = Promise.resolve(createdLike)
     res.status(200).json(result)
   }),
   unlike: tryCatch(async (req, res) => {

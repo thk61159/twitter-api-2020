@@ -1,0 +1,6 @@
+services:
+  - name: twitter-api-2020
+    buildCommand: npm install && npm run build && npm run migrate && npm run seed
+    startCommand: npm run start
+    env:
+      NODE_ENV: production

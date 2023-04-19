@@ -4,6 +4,8 @@ const { tryCatch } = require('../helpers/tryCatch')
 const { ReqError, AuthError } = require('../helpers/errorInstance')
 const jwt = require('jsonwebtoken')
 const sequelize = require('sequelize')
+const env = process.env.NODE_ENV || 'development'
+const databaseType = require('../config/config.json')[env].dialect
 
 const adminController = {
   signIn: tryCatch(async (req, res) => {
@@ -24,13 +26,21 @@ const adminController = {
   getUsers: async (req, res, next) => { // 可優化 將SQL語法轉為Sequelize
     try {
       const data = await User.findAll({
-        attributes: [
-          'id', 'account', 'name', 'avatar', 'background',
-          [sequelize.literal('(SELECT COUNT(*) FROM "Tweets" WHERE "Tweets"."User_id" = "User"."id")'), 'tweetsCount'],
-          [sequelize.literal('(SELECT COUNT(*) FROM "Likes" INNER JOIN "Tweets" ON "Likes"."Tweet_id" = "Tweets"."id" WHERE "Tweets"."User_id" = "User"."id")'), 'likesCount'],
-          [sequelize.literal('(SELECT COUNT(*) FROM "Followships" WHERE "Followships"."following_id" = "User"."id")'), 'followingsCount'],
-          [sequelize.literal('(SELECT COUNT(*) FROM "Followships" WHERE "Followships"."follower_id" = "User"."id")'), 'followersCount']
-        ],
+        attributes: databaseType === 'mysql'
+          ? [
+              'id', 'account', 'name', 'avatar', 'background',
+              [sequelize.literal('(SELECT COUNT(*) FROM Tweets WHERE Tweets.User_id = User.id)'), 'tweetsCount'],
+              [sequelize.literal('(SELECT COUNT(*) FROM Likes INNER JOIN Tweets ON Likes.Tweet_id = Tweets.id WHERE Tweets.User_id = User.id)'), 'likesCount'],
+              [sequelize.literal('(SELECT COUNT(*) FROM Followships WHERE Followships.following_id = User.id)'), 'followingsCount'],
+              [sequelize.literal('(SELECT COUNT(*) FROM Followships WHERE Followships.follower_id = User.id)'), 'followersCount']
+            ]
+          : [
+              'id', 'account', 'name', 'avatar', 'background',
+              [sequelize.literal('(SELECT COUNT(*) FROM "Tweets" WHERE "Tweets"."User_id" = "User"."id")'), 'tweetsCount'],
+              [sequelize.literal('(SELECT COUNT(*) FROM "Likes" INNER JOIN "Tweets" ON "Likes"."Tweet_id" = "Tweets"."id" WHERE "Tweets"."User_id" = "User"."id")'), 'likesCount'],
+              [sequelize.literal('(SELECT COUNT(*) FROM "Followships" WHERE "Followships"."following_id" = "User"."id")'), 'followingsCount'],
+              [sequelize.literal('(SELECT COUNT(*) FROM "Followships" WHERE "Followships"."follower_id" = "User"."id")'), 'followersCount']
+            ],
         group: ['User.id'],
         nest: true
       })

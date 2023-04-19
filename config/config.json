@@ -1,12 +1,11 @@
 {
   "development": {
-		"username": "root",
-		"password": "password",
-		"database": "localhost",
-		"host": "127.0.0.1",
-		"dialect": "postgres",
-		"port": "5432"
-	},
+    "username": "root",
+    "password": "password",
+    "database": "ac_twitter_workspace",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
+  },
   "test": {
     "username": "root",
     "password": "password",
@@ -16,7 +15,8 @@
     "logging": false
   },
   "production": {
-		"use_env_variable": "PROD_DATABASE_URL"
+		"use_env_variable": "PROD_DATABASE_URL",
+     "dialect": "postgres"
 	},
   "travis": {
     "username": "travis",

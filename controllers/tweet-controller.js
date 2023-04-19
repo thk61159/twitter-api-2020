@@ -5,6 +5,8 @@ const { imgurFileHandler } = require('../helpers/file-helpers')
 const { tryCatch } = require('../helpers/tryCatch')
 const { getUser } = require('../_helpers')
 const sequelize = require('sequelize')
+const env = process.env.NODE_ENV || 'development'
+const databaseType = require('../config/config.json')[env].dialect
 
 const tweetController = {
   getTweets: tryCatch(async (req, res) => {
@@ -50,11 +52,17 @@ const tweetController = {
     const TweetId = req.params.tweet_id
     const currentUser = getUser(req)
     const tweet = await Tweet.findByPk(TweetId, {
-      attributes: [
-        'id', 'description', 'createdAt',
-        [sequelize.literal('(SELECT COUNT(*) FROM "Likes" WHERE "Likes"."Tweet_id" = "Tweet"."id")'), 'Likes'],
-        [sequelize.literal('(SELECT COUNT(*) FROM "Replies" WHERE "Replies"."Tweet_id" = "Tweet"."id")'), 'Replies']
-      ],
+      attributes: databaseType === 'mysql'
+        ? [
+            'id', 'description', 'createdAt',
+            [sequelize.literal('(SELECT COUNT(*) FROM Likes WHERE Likes.Tweet_id = Tweet.id)'), 'Likes'],
+            [sequelize.literal('(SELECT COUNT(*) FROM Replies WHERE Replies.Tweet_id = Tweet.id)'), 'Replies']
+          ]
+        : [
+            'id', 'description', 'createdAt',
+            [sequelize.literal('(SELECT COUNT(*) FROM "Likes" WHERE "Likes"."Tweet_id" = "Tweet"."id")'), 'Likes'],
+            [sequelize.literal('(SELECT COUNT(*) FROM "Replies" WHERE "Replies"."Tweet_id" = "Tweet"."id")'), 'Replies']
+          ],
       include: [
         {
           model: User,
@@ -116,7 +124,7 @@ const tweetController = {
       raw: true,
       nest: true
     })
-    if(!tweet) throw new ReqError('資料庫無此推文!')
+    if (!tweet) throw new ReqError('資料庫無此推文!')
     const poster = {
       id: tweet.poster.id,
       account: tweet.poster.account
@@ -127,7 +135,7 @@ const tweetController = {
         { model: User, attributes: ['id', 'avatar', 'name', 'account', 'createdAt'] }
       ]
     })
-   
+
     const result = replies.map(reply => {
       const temp = { ...reply.toJSON() }
       temp.poster = poster

@@ -7,6 +7,8 @@ const { User, Tweet, Followship, Reply, Like } = require('../models')
 const { imgurFileHandler } = require('../helpers/file-helpers')
 const { tryCatch } = require('../helpers/tryCatch')
 const getUser = require('../_helpers').getUser
+const env = process.env.NODE_ENV || 'development'
+const databaseType = require('../config/config.json')[env].dialect
 
 const userController = {
   signUp: tryCatch(async (req, res) => {
@@ -151,11 +153,17 @@ const userController = {
     likes = likes.map(e => e.TweetId)
     let result = await Tweet.findAll({
       where: { id: likes },
-      attributes: [
-        'id', 'description', 'image', 'createdAt', 'updatedAt',
-        [sequelize.literal('(SELECT COUNT(*) FROM "Likes" WHERE "Likes"."Tweet_id" = "Tweet"."id" AND "Likes"."deleted_at" IS NULL)'), 'Likes'],
-        [sequelize.literal('(SELECT COUNT(*) FROM "Replies" WHERE "Replies"."Tweet_id" = "Tweet"."id")'), 'Replies']
-      ],
+      attributes: databaseType === 'mysql'
+        ? [
+            'id', 'description', 'image', 'createdAt', 'updatedAt',
+            [sequelize.literal('(SELECT COUNT(*) FROM Likes WHERE Likes.Tweet_id = Tweet.id AND Likes.deleted_at IS NULL)'), 'Likes'],
+            [sequelize.literal('(SELECT COUNT(*) FROM Replies WHERE Replies.Tweet_id = Tweet.id)'), 'Replies']
+          ]
+        : [
+            'id', 'description', 'image', 'createdAt', 'updatedAt',
+            [sequelize.literal('(SELECT COUNT(*) FROM "Likes" WHERE "Likes"."Tweet_id" = "Tweet"."id" AND "Likes"."deleted_at" IS NULL)'), 'Likes'],
+            [sequelize.literal('(SELECT COUNT(*) FROM "Replies" WHERE "Replies"."Tweet_id" = "Tweet"."id")'), 'Replies']
+          ],
       include: [
         { model: User, as: 'poster', attributes: ['id', 'name', 'account', 'avatar', 'updatedAt'] }
       ],

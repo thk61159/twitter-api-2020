@@ -1,11 +1,11 @@
 'use strict'
-
+const { User } = require('../models')
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    const usersId = await queryInterface.sequelize.query(
-      'SELECT id FROM Users WHERE role <> "admin"',
-      { type: queryInterface.sequelize.QueryTypes.SELECT }
-    )
+    const usersId = await User.findAll({
+			where: { role: 'user' },
+			attributes: ['id'],
+		})
     for (let i = 0; i < 4; i++) {
       await queryInterface.bulkInsert(
         'Followships',

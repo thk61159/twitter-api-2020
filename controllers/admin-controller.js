@@ -26,10 +26,10 @@ const adminController = {
       const data = await User.findAll({
         attributes: [
           'id', 'account', 'name', 'avatar', 'background',
-          [sequelize.literal('(SELECT COUNT(*) FROM Tweets WHERE Tweets.User_id = User.id)'), 'tweetsCount'],
-          [sequelize.literal('(SELECT COUNT(*) FROM Likes INNER JOIN Tweets ON Likes.Tweet_id = Tweets.id WHERE Tweets.User_id = User.id)'), 'likesCount'],
-          [sequelize.literal('(SELECT COUNT(*) FROM `Followships` WHERE `Followships`.`following_id` = `User`.`id`)'), 'followingsCount'],
-          [sequelize.literal('(SELECT COUNT(*) FROM `Followships` WHERE `Followships`.`follower_id` = `User`.`id`)'), 'followersCount']
+          [sequelize.literal('(SELECT COUNT(*) FROM "Tweets" WHERE "Tweets"."User_id" = "User"."id")'), 'tweetsCount'],
+          [sequelize.literal('(SELECT COUNT(*) FROM "Likes" INNER JOIN "Tweets" ON "Likes"."Tweet_id" = "Tweets"."id" WHERE "Tweets"."User_id" = "User"."id")'), 'likesCount'],
+          [sequelize.literal('(SELECT COUNT(*) FROM "Followships" WHERE "Followships"."following_id" = "User"."id")'), 'followingsCount'],
+          [sequelize.literal('(SELECT COUNT(*) FROM "Followships" WHERE "Followships"."follower_id" = "User"."id")'), 'followersCount']
         ],
         group: ['User.id'],
         nest: true
@@ -71,8 +71,8 @@ const adminController = {
       ])
       Replies.forEach(reply => reply.destroy()) // 並刪除與這條貼文有關的資料
       Likes.forEach(like => like.destroy())
-      const deletedTweet = await tweet.destroy()
-      res.status(200).json(deletedTweet)
+      await tweet.destroy()
+      res.status(200).json({ msg: '成功刪除推文', ...tweet.toJSON() })
     } catch (error) {
       next(error)
     }

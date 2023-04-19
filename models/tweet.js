@@ -10,15 +10,18 @@ module.exports = (sequelize, DataTypes) => {
       Tweet.belongsTo(models.User, { foreignKey: 'UserId', as: 'poster' })
     }
   }
-  Tweet.init({
-    UserId: DataTypes.INTEGER,
-    description: DataTypes.TEXT,
-    image: DataTypes.STRING
-  }, {
-    sequelize,
-    modelName: 'Tweet',
-    tableName: 'Tweets',
-    underscored: true
-  })
+  Tweet.init(
+		{
+			UserId: { type: DataTypes.INTEGER, field: 'User_id' },
+			description: DataTypes.TEXT,
+			image: DataTypes.STRING,
+		},
+		{
+			sequelize,
+			modelName: 'Tweet',
+			tableName: 'Tweets',
+			underscored: true,
+		}
+	)
   return Tweet
 }

@@ -52,8 +52,8 @@ const tweetController = {
     const tweet = await Tweet.findByPk(TweetId, {
       attributes: [
         'id', 'description', 'createdAt',
-        [sequelize.literal('(SELECT COUNT(*) FROM Likes WHERE Likes.Tweet_id = Tweet.id)'), 'Likes'],
-        [sequelize.literal('(SELECT COUNT(*) FROM Replies WHERE Replies.Tweet_id = Tweet.id)'), 'Replies']
+        [sequelize.literal('(SELECT COUNT(*) FROM "Likes" WHERE "Likes"."Tweet_id" = "Tweet"."id")'), 'Likes'],
+        [sequelize.literal('(SELECT COUNT(*) FROM "Replies" WHERE "Replies"."Tweet_id" = "Tweet"."id")'), 'Replies']
       ],
       include: [
         {
@@ -116,6 +116,7 @@ const tweetController = {
       raw: true,
       nest: true
     })
+    if(!tweet) throw new ReqError('資料庫無此推文!')
     const poster = {
       id: tweet.poster.id,
       account: tweet.poster.account
@@ -126,7 +127,7 @@ const tweetController = {
         { model: User, attributes: ['id', 'avatar', 'name', 'account', 'createdAt'] }
       ]
     })
-    if (!replies.length) throw new ReqError('資料庫無此筆資料或尚無留言!')
+   
     const result = replies.map(reply => {
       const temp = { ...reply.toJSON() }
       temp.poster = poster

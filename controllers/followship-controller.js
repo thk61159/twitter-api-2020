@@ -43,9 +43,9 @@ const adminController = {
           through: { attributes: [] }
         }
       ],
-      group: ['User.id'],
+      group: ['User.id', 'Followers.id'],
       limit: Number(limit) || null,
-      order: sort ? [[sequelize.literal('followersCount'), 'DESC']] : null,
+      order: sort ? [['followersCount', 'DESC']] : null,
       raw: true
     })
     const result = users.map(user => {
@@ -65,8 +65,12 @@ const adminController = {
     ])
     if (!followship) throw new ReqError('資料庫無此筆資料')
     if (!user) throw new ReqError('使用者不存在!')
-    const deletedFollowship = await followship.destroy()
-    res.status(200).json(deletedFollowship.toJSON())
+    await followship.destroy()
+    const check = await Followship.findOne({
+			where: { followingId, followerId },
+    })
+    if (check) throw new Error('取消追蹤失敗')
+      res.status(200).json({ msg: '取消追蹤成功', ...followship.toJSON() })
   })
 }
 

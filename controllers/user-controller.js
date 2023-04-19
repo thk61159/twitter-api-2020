@@ -153,8 +153,8 @@ const userController = {
       where: { id: likes },
       attributes: [
         'id', 'description', 'image', 'createdAt', 'updatedAt',
-        [sequelize.literal('(SELECT COUNT(*) FROM `Likes` WHERE `Likes`.`Tweet_id` = `Tweet`.`id` AND `Likes`.`deleted_at` IS NULL)'), 'Likes'],
-        [sequelize.literal('(SELECT COUNT(*) FROM `Replies` WHERE `Replies`.`Tweet_id` = `Tweet`.`id`)'), 'Replies']
+        [sequelize.literal('(SELECT COUNT(*) FROM "Likes" WHERE "Likes"."Tweet_id" = "Tweet"."id" AND "Likes"."deleted_at" IS NULL)'), 'Likes'],
+        [sequelize.literal('(SELECT COUNT(*) FROM "Replies" WHERE "Replies"."Tweet_id" = "Tweet"."id")'), 'Replies']
       ],
       include: [
         { model: User, as: 'poster', attributes: ['id', 'name', 'account', 'avatar', 'updatedAt'] }

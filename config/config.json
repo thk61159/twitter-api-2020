@@ -1,11 +1,12 @@
 {
   "development": {
-    "username": "root",
-    "password": "password",
-    "database": "ac_twitter_workspace",
-    "host": "127.0.0.1",
-    "dialect": "mysql"
-  },
+		"username": "root",
+		"password": "password",
+		"database": "localhost",
+		"host": "127.0.0.1",
+		"dialect": "postgres",
+		"port": "5432"
+	},
   "test": {
     "username": "root",
     "password": "password",

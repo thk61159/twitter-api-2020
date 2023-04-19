@@ -10,15 +10,18 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
 
-  Like.init({
-    UserId: DataTypes.INTEGER,
-    TweetId: DataTypes.INTEGER
-  }, {
-    sequelize,
-    paranoid: true,
-    modelName: 'Like',
-    tableName: 'Likes',
-    underscored: true
-  })
+  Like.init(
+		{
+			UserId: { type: DataTypes.INTEGER, field: 'User_id' },
+			TweetId: { type: DataTypes.INTEGER, field: 'Tweet_id' },
+		},
+		{
+			sequelize,
+			paranoid: true,
+			modelName: 'Like',
+			tableName: 'Likes',
+			underscored: true,
+		}
+	)
   return Like
 }
